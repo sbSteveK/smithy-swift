@@ -6,18 +6,18 @@ import PackageDescription
 // Define libxml2 only on Linux, since it causes warnings
 // about "pkgconfig not found" on Mac
 #if os(Linux)
-let libXML2DependencyOrNil: Target.Dependency? = "libxml2"
-let libXML2TargetOrNil: Target? = Target.systemLibrary(
-    name: "libxml2",
-    pkgConfig: "libxml-2.0",
-    providers: [
-        .apt(["libxml2 libxml2-dev"]),
-        .yum(["libxml2 libxml2-devel"])
-    ]
-)
+    let libXML2DependencyOrNil: Target.Dependency? = "libxml2"
+    let libXML2TargetOrNil: Target? = Target.systemLibrary(
+        name: "libxml2",
+        pkgConfig: "libxml-2.0",
+        providers: [
+            .apt(["libxml2 libxml2-dev"]),
+            .yum(["libxml2 libxml2-devel"]),
+        ]
+    )
 #else
-let libXML2DependencyOrNil: Target.Dependency? = nil
-let libXML2TargetOrNil: Target? = nil
+    let libXML2DependencyOrNil: Target.Dependency? = nil
+    let libXML2TargetOrNil: Target? = nil
 #endif
 
 let package = Package(
@@ -26,7 +26,7 @@ let package = Package(
         .macOS(.v10_15),
         .iOS(.v13),
         .tvOS(.v13),
-        .watchOS(.v6)
+        .watchOS(.v6),
     ],
     products: [
         .library(name: "Smithy", targets: ["Smithy"]),
@@ -56,12 +56,13 @@ let package = Package(
     ],
     dependencies: {
         var dependencies: [Package.Dependency] = [
-            .package(url: "https://github.com/awslabs/aws-crt-swift.git", exact: "0.52.1"),
+            .package(url: "https://github.com/awslabs/aws-crt-swift.git", from: "0.52.1"),
             .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
         ]
         let isDocCEnabled = ProcessInfo.processInfo.environment["AWS_SWIFT_SDK_ENABLE_DOCC"] != nil
         if isDocCEnabled {
-            dependencies.append(.package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"))
+            dependencies.append(
+                .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"))
         }
         return dependencies
     }(),
@@ -69,7 +70,7 @@ let package = Package(
         .target(
             name: "Smithy",
             dependencies: [
-                .product(name: "Logging", package: "swift-log"),
+                .product(name: "Logging", package: "swift-log")
             ]
         ),
         .target(
@@ -119,21 +120,21 @@ let package = Package(
             dependencies: [
                 "SmithyReadWrite",
                 "SmithyTimestamps",
-                libXML2DependencyOrNil
+                libXML2DependencyOrNil,
             ].compactMap { $0 }
         ),
         .target(
             name: "SmithyJSON",
             dependencies: [
                 "SmithyReadWrite",
-                "SmithyTimestamps"
+                "SmithyTimestamps",
             ]
         ),
         .target(
             name: "SmithyFormURL",
             dependencies: [
                 "SmithyReadWrite",
-                "SmithyTimestamps"
+                "SmithyTimestamps",
             ]
         ),
         libXML2TargetOrNil,
@@ -148,7 +149,7 @@ let package = Package(
             name: "SmithyIdentity",
             dependencies: [
                 "SmithyIdentityAPI",
-                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift")
+                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift"),
             ]
         ),
         .target(
@@ -159,7 +160,7 @@ let package = Package(
             name: "SmithyHTTPAPI",
             dependencies: [
                 "Smithy",
-                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift")
+                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift"),
             ]
         ),
         .target(
@@ -168,7 +169,7 @@ let package = Package(
                 "Smithy",
                 "SmithyHTTPAPI",
                 "SmithyStreams",
-                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift")
+                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift"),
             ]
         ),
         .target(
@@ -181,7 +182,7 @@ let package = Package(
                 "SmithyIdentityAPI",
                 "SmithyChecksumsAPI",
                 "SmithyHTTPClient",
-                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift")
+                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift"),
             ]
         ),
         .target(
@@ -202,7 +203,7 @@ let package = Package(
                 "Smithy",
                 "SmithyEventStreamsAPI",
                 "SmithyEventStreamsAuthAPI",
-                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift")
+                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift"),
             ]
         ),
         .target(
@@ -210,7 +211,7 @@ let package = Package(
             dependencies: [
                 "Smithy",
                 .product(name: "Logging", package: "swift-log"),
-                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift")
+                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift"),
             ]
         ),
         .target(
@@ -224,7 +225,7 @@ let package = Package(
                 "SmithyChecksumsAPI",
                 "SmithyStreams",
                 "SmithyHTTPClient",
-                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift")
+                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift"),
             ]
         ),
         .target(
@@ -232,7 +233,7 @@ let package = Package(
             dependencies: [
                 "SmithyReadWrite",
                 "SmithyTimestamps",
-                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift")
+                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift"),
             ]
         ),
         .target(
@@ -246,7 +247,7 @@ let package = Package(
                 "SmithyStreams",
                 .product(name: "Logging", package: "swift-log"),
             ],
-            resources: [ .process("Resources") ]
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "SmithyCBORTests",
@@ -259,7 +260,7 @@ let package = Package(
                 "SmithyHTTPAPI",
                 "Smithy",
                 "SmithyTestUtil",
-                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift")
+                .product(name: "AwsCommonRuntimeKit", package: "aws-crt-swift"),
             ]
         ),
         .testTarget(
@@ -268,7 +269,9 @@ let package = Package(
         ),
         .testTarget(
             name: "SmithyHTTPAuthTests",
-            dependencies: ["SmithyHTTPAuth", "SmithyHTTPAPI", "Smithy", "SmithyIdentity", "ClientRuntime"]
+            dependencies: [
+                "SmithyHTTPAuth", "SmithyHTTPAPI", "Smithy", "SmithyIdentity", "ClientRuntime",
+            ]
         ),
         .testTarget(
             name: "SmithyJSONTests",
