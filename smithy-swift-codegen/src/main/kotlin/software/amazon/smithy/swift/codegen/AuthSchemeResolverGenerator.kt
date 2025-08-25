@@ -10,6 +10,7 @@ import software.amazon.smithy.model.shapes.ShapeId
 import software.amazon.smithy.model.traits.AuthTrait
 import software.amazon.smithy.model.traits.OptionalAuthTrait
 import software.amazon.smithy.model.traits.Trait
+import software.amazon.smithy.model.traits.synthetic.NoAuthTrait
 import software.amazon.smithy.rulesengine.language.EndpointRuleSet
 import software.amazon.smithy.rulesengine.language.syntax.parameters.Parameter
 import software.amazon.smithy.rulesengine.language.syntax.parameters.ParameterType
@@ -26,7 +27,9 @@ import software.amazon.smithy.swift.codegen.utils.clientName
 import software.amazon.smithy.swift.codegen.utils.toLowerCamelCase
 import java.util.Locale
 
-class AuthSchemeResolverGenerator {
+class AuthSchemeResolverGenerator(
+    private val optionCustomization: ((String, SwiftWriter) -> SwiftWriter)? = null,
+) {
     fun render(ctx: ProtocolGenerator.GenerationContext) {
         val serviceIndex = ServiceIndex(ctx.model)
 
@@ -47,10 +50,11 @@ class AuthSchemeResolverGenerator {
     ) {
         writer.apply {
             openBlock(
-                "public struct ${getSdkId(ctx)}${SmithyHTTPAuthAPITypes.AuthSchemeResolverParams.name}: \$N {",
+                "${ctx.settings.visibility} struct ${getSdkId(ctx)}${SmithyHTTPAuthAPITypes.AuthSchemeResolverParams.name}: \$N {",
                 "}",
                 SmithyHTTPAuthAPITypes.AuthSchemeResolverParams,
             ) {
+                writer.write("public let authSchemePreference: \$N?", SwiftTypes.StringList)
                 write("public let operation: \$N", SwiftTypes.String)
 
                 if (usesRulesBasedAuthResolver(ctx)) {
@@ -96,7 +100,7 @@ class AuthSchemeResolverGenerator {
     ) {
         writer.apply {
             openBlock(
-                "public protocol ${getServiceSpecificAuthSchemeResolverName(ctx)}: \$N {",
+                "${ctx.settings.visibility} protocol ${getServiceSpecificAuthSchemeResolverName(ctx)}: \$N {",
                 "}",
                 SmithyHTTPAuthAPITypes.AuthSchemeResolver,
             ) {
@@ -127,13 +131,19 @@ class AuthSchemeResolverGenerator {
 
         // Model-based auth scheme resolver should be private internal impl detail if service uses rules-based resolver.
         val accessModifier = if (usesRulesBasedResolver) "private" else "public"
+        val resolvedAccessModifier =
+            if (accessModifier == "public" && ctx.settings.internalClient) {
+                ctx.settings.visibility
+            } else {
+                accessModifier
+            }
         val serviceSpecificAuthResolverProtocol = sdkId + AUTH_SCHEME_RESOLVER
 
         writer.apply {
             writer.openBlock(
                 "\$L struct \$L: \$L {",
                 "}",
-                accessModifier,
+                resolvedAccessModifier,
                 defaultResolverName,
                 serviceSpecificAuthResolverProtocol,
             ) {
@@ -175,8 +185,10 @@ class AuthSchemeResolverGenerator {
                 }
                 // Render switch block
                 renderSwitchBlock(serviceIndex, ctx, writer)
-                // Return result
-                write("return validAuthOptions")
+                // Call reprioritizeAuthOptions and return result
+                write(
+                    "return self.reprioritizeAuthOptions(authSchemePreference: serviceParams.authSchemePreference, authOptions: validAuthOptions)",
+                )
             }
         }
     }
@@ -225,35 +237,50 @@ class AuthSchemeResolverGenerator {
         writer.apply {
             indent()
             schemes.forEach {
-                if (it.key == SigV4Trait.ID) {
-                    renderSigV4AuthOption(it, writer)
-                } else {
+                if (it.key == NoAuthTrait.ID) {
                     write(
                         "validAuthOptions.append(\$N(schemeID: \$S))",
                         SmithyHTTPAuthAPITypes.AuthOption,
                         it.key,
                     )
+                } else {
+                    renderAuthOption(it, writer)
                 }
             }
             dedent()
         }
     }
 
-    private fun renderSigV4AuthOption(
+    private fun renderAuthOption(
         scheme: Map.Entry<ShapeId, Trait>,
         writer: SwiftWriter,
     ) {
         writer.apply {
-            write("var sigV4Option = \$N(schemeID: \$S)", SmithyHTTPAuthAPITypes.AuthOption, scheme.key)
+            val authOptionName = "${scheme.key.name}Option"
+            write("var $authOptionName = \$N(schemeID: \$S)", SmithyHTTPAuthAPITypes.AuthOption, scheme.key)
+            if (scheme.key == SigV4Trait.ID) renderSigV4AuthOptionCustomization(authOptionName, scheme, writer)
+            optionCustomization?.invoke(authOptionName, writer)
+            write("validAuthOptions.append($authOptionName)")
+        }
+    }
+
+    private fun renderSigV4AuthOptionCustomization(
+        authOptionName: String,
+        scheme: Map.Entry<ShapeId, Trait>,
+        writer: SwiftWriter,
+    ) {
+        writer.apply {
             write(
-                "sigV4Option.signingProperties.set(key: \$N.signingName, value: \"${(scheme.value as SigV4Trait).name}\")",
+                "$authOptionName.signingProperties.set(key: \$N.signingName, value: \"${(scheme.value as SigV4Trait).name}\")",
                 SmithyHTTPAuthAPITypes.SigningPropertyKeys,
             )
             openBlock("guard let region = serviceParams.region else {", "}") {
                 write("throw \$N.authError(\"Missing region in auth scheme parameters for SigV4 auth scheme.\")", SmithyTypes.ClientError)
             }
-            write("sigV4Option.signingProperties.set(key: \$N.signingRegion, value: region)", SmithyHTTPAuthAPITypes.SigningPropertyKeys)
-            write("validAuthOptions.append(sigV4Option)")
+            write(
+                "$authOptionName.signingProperties.set(key: \$N.signingRegion, value: region)",
+                SmithyHTTPAuthAPITypes.SigningPropertyKeys,
+            )
         }
     }
 
@@ -278,12 +305,13 @@ class AuthSchemeResolverGenerator {
                             SmithyTypes.ClientError,
                         )
                     }
+                    writer.write("let authSchemePreference = context.getAuthSchemePreference()")
                     val paramType = getSdkId(ctx) + SmithyHTTPAuthAPITypes.AuthSchemeResolverParams.name
                     if (hasSigV4) {
                         write("let opRegion = context.getRegion()")
-                        write("return $paramType(operation: opName, region: opRegion)")
+                        write("return $paramType(authSchemePreference: authSchemePreference, operation: opName, region: opRegion)")
                     } else {
-                        write("return $paramType(operation: opName)")
+                        write("return $paramType(authSchemePreference: authSchemePreference, operation: opName)")
                     }
                 }
             }
