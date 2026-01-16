@@ -6,15 +6,16 @@
 //
 
  #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+@preconcurrency import class OpenTelemetryApi.AttributeArray
 // OpenTelemetryApi specific imports
 @preconcurrency import enum OpenTelemetryApi.AttributeValue
-@preconcurrency import class OpenTelemetryApi.AttributeArray
 
+import struct Smithy.AttributeKey
 // Smithy imports
 import struct Smithy.Attributes
-import struct Smithy.AttributeKey
 
 extension Attributes {
+    @available(*, deprecated, message: "Moved to smithy-swift-opentelemetry package. Removal after March 10, 2026.")
     public func toOtelAttributes() -> [String: AttributeValue] {
         let keys: [String] = self.getKeys()
         var otelKeys: [String: AttributeValue] = [:]
