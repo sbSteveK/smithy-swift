@@ -5,15 +5,17 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
+import struct Foundation.Date
+import struct Foundation.TimeInterval
 import class Smithy.Context
 import class Smithy.ContextBuilder
 import protocol Smithy.RequestMessage
-import protocol Smithy.ResponseMessage
 import protocol Smithy.RequestMessageSerializer
+import protocol Smithy.ResponseMessage
 import protocol Smithy.ResponseMessageDeserializer
 import struct SmithyHTTPAuthAPI.SelectedAuthScheme
-import protocol SmithyRetriesAPI.RetryStrategy
 import struct SmithyRetriesAPI.RetryErrorInfo
+import protocol SmithyRetriesAPI.RetryStrategy
 
 /// Builds an Orchestrator, combining runtime components, interceptors, serializers, and deserializers.
 ///
@@ -33,6 +35,7 @@ public class OrchestratorBuilder<
     internal var deserialize: ((ResponseType, Context) async throws -> OutputType)?
     internal var retryStrategy: (any RetryStrategy)?
     internal var retryErrorInfoProvider: ((Error) -> RetryErrorInfo?)?
+    internal var clockSkewProvider: (ClockSkewProvider<RequestType, ResponseType>)?
     internal var telemetry: OrchestratorTelemetry?
     internal var selectAuthScheme: SelectAuthScheme?
     internal var applyEndpoint: (any ApplyEndpoint<RequestType>)?
@@ -102,6 +105,14 @@ public class OrchestratorBuilder<
     @discardableResult
     public func retryErrorInfoProvider(_ retryErrorInfoProvider: @escaping (Error) -> RetryErrorInfo?) -> Self {
         self.retryErrorInfoProvider = retryErrorInfoProvider
+        return self
+    }
+
+    /// - Parameter clockSkewProvider: Function that turns operation errors into a clock skew value
+    /// - Returns: Builder
+    @discardableResult
+    public func clockSkewProvider(_ clockSkewProvider: @escaping ClockSkewProvider<RequestType, ResponseType>) -> Self {
+        self.clockSkewProvider = clockSkewProvider
         return self
     }
 

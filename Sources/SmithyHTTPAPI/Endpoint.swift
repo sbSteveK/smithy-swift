@@ -7,7 +7,6 @@
 
 import Foundation
 import Smithy
-import enum AwsCommonRuntimeKit.EndpointProperty
 
 public struct Endpoint: Sendable, Equatable {
     public let uri: URI
@@ -77,19 +76,6 @@ public struct Endpoint: Sendable, Equatable {
         self.uri = uri
         self.headers = headers
         self.properties = properties
-    }
-}
-
-extension Endpoint {
-    public init(urlString: String,
-                headers: Headers = Headers(),
-                endpointProperties: [String: EndpointProperty]) throws {
-        guard let url = URLComponents(string: urlString)?.url else {
-            throw ClientError.unknownError("invalid url \(urlString)")
-        }
-
-        let properties = endpointProperties.mapValues(EndpointPropertyValue.init)
-        try self.init(url: url, headers: headers, properties: properties)
     }
 }
 

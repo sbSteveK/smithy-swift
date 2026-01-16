@@ -7,11 +7,13 @@
 
  #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Foundation
+import SmithyTelemetryAPI
 
 // OpenTelemetrySdk specific imports
 @preconcurrency import protocol OpenTelemetrySdk.SpanExporter
 
 /// Namespace for the SDK Telemetry implementation.
+@available(*, deprecated, message: "Moved to smithy-swift-opentelemetry package. Removal after March 10, 2026.")
 public enum OpenTelemetrySwift {
     /// The SDK TelemetryProviderOTel Implementation.
     ///
@@ -19,10 +21,12 @@ public enum OpenTelemetrySwift {
     /// - loggerProvider: provides SwiftLoggers
     /// - meterProvider: no-op
     /// - tracerProvider: provides OTelTracerProvider with InMemoryExporter
+    @available(*, deprecated, message: "Moved to smithy-swift-opentelemetry package. Removal after March 10, 2026.")
     public static func provider(spanExporter: any SpanExporter) -> TelemetryProvider {
         return OpenTelemetrySwiftProvider(spanExporter: spanExporter)
     }
 
+    @available(*, deprecated, message: "Moved to smithy-swift-opentelemetry package. Removal after March 10, 2026.")
     public final class OpenTelemetrySwiftProvider: TelemetryProvider {
         public let contextManager: TelemetryContextManager
         public let loggerProvider: LoggerProvider

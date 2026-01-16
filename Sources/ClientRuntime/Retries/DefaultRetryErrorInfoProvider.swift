@@ -5,13 +5,15 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-import enum SmithyHTTPAPI.HTTPStatusCode
-import struct SmithyRetriesAPI.RetryErrorInfo
-import enum SmithyRetriesAPI.RetryErrorType
-import protocol SmithyRetriesAPI.RetryErrorInfoProvider
-import struct Foundation.TimeInterval
+import enum AwsCommonRuntimeKit.CommonRunTimeError
+import struct AwsCommonRuntimeKit.CRTError
 import class Foundation.NSError
 import var Foundation.NSURLErrorDomain
+import struct Foundation.TimeInterval
+import enum SmithyHTTPAPI.HTTPStatusCode
+import struct SmithyRetriesAPI.RetryErrorInfo
+import protocol SmithyRetriesAPI.RetryErrorInfoProvider
+import enum SmithyRetriesAPI.RetryErrorType
 
 public enum DefaultRetryErrorInfoProvider: RetryErrorInfoProvider, Sendable {
     /// Returns information used to determine how & if to retry an error.
@@ -40,6 +42,21 @@ public enum DefaultRetryErrorInfoProvider: RetryErrorInfoProvider, Sendable {
             // Domain == "NSURLErrorDomain"
             // NSURLErrorTimedOut =             -1001
             // "The request timed out."
+            return .init(errorType: .transient, retryAfterHint: nil, isTimeout: true)
+        } else if let crtError = error as? CommonRunTimeError,
+                  case .crtError(let crtErrorStruct) = crtError,
+                  crtErrorStruct.code == 1051 {
+            // Retries CRTError(code: 1051, message: "socket is closed.", name: "AWS_IO_SOCKET_CLOSED"))
+            return .init(errorType: .transient, retryAfterHint: nil, isTimeout: false)
+        } else if let crtError = error as? CommonRunTimeError,
+                  case .crtError(let crtErrorStruct) = crtError,
+                  crtErrorStruct.code == 1048 {
+            // Retries CRTError(code: 1048, message: "socket operation timed out.", name: "AWS_IO_SOCKET_TIMEOUT"))
+            return .init(errorType: .transient, retryAfterHint: nil, isTimeout: true)
+        } else if let crtError = error as? CommonRunTimeError,
+                  case .crtError(let crtErrorStruct) = crtError,
+                  crtErrorStruct.code == 1067 {
+            // Retries CRTError(code: 1067, message: "Channel shutdown due to tls negotiation timeout", name: "AWS_IO_TLS_NEGOTIATION_TIMEOUT"))
             return .init(errorType: .transient, retryAfterHint: nil, isTimeout: true)
         }
         return nil
