@@ -86,21 +86,47 @@ object ClientRuntimeTypes {
         val DefaultTelemetry = runtimeSymbol("DefaultTelemetry", SwiftDeclaration.ENUM)
         val splitHeaderListValues = runtimeSymbol("splitHeaderListValues", SwiftDeclaration.FUNC)
         val splitHttpDateHeaderListValues = runtimeSymbol("splitHttpDateHeaderListValues", SwiftDeclaration.FUNC)
-        val OrchestratorBuilder = runtimeSymbol("OrchestratorBuilder", SwiftDeclaration.CLASS)
+        val OrchestratorBuilder = runtimeSymbol("OrchestratorBuilder", SwiftDeclaration.CLASS, listOf(), listOf("SchemaBasedSerde"))
         val InterceptorProvider = runtimeSymbol("InterceptorProvider", SwiftDeclaration.PROTOCOL)
         val HttpInterceptorProvider = runtimeSymbol("HttpInterceptorProvider", SwiftDeclaration.PROTOCOL)
+        val SendableInterceptorProviderBox = runtimeSymbol("SendableInterceptorProviderBox", SwiftDeclaration.STRUCT)
+        val SendableHttpInterceptorProviderBox = runtimeSymbol("SendableHttpInterceptorProviderBox", SwiftDeclaration.STRUCT)
         val SDKLoggingSystem = runtimeSymbol("SDKLoggingSystem", SwiftDeclaration.CLASS)
+        val initialize = runtimeSymbol("initialize", SwiftDeclaration.FUNC)
     }
 
     object Composite {
         val InterceptorProviders = runtimeSymbol("[ClientRuntime.InterceptorProvider]", null, listOf(InterceptorProvider))
         val HttpInterceptorProviders = runtimeSymbol("[ClientRuntime.HttpInterceptorProvider]", null, listOf(HttpInterceptorProvider))
+        val SendableInterceptorProviderBoxes =
+            runtimeSymbol("[ClientRuntime.SendableInterceptorProviderBox]", null, listOf(Core.SendableInterceptorProviderBox))
+        val SendableHttpInterceptorProviderBoxes =
+            runtimeSymbol("[ClientRuntime.SendableHttpInterceptorProviderBox]", null, listOf(Core.SendableHttpInterceptorProviderBox))
+    }
+
+    object RestJSON {
+        val RestJSONError = runtimeSymbol("RestJSONError", SwiftDeclaration.STRUCT, emptyList(), listOf("SmithyReadWrite"))
+    }
+
+    object AWSJSON {
+        val AWSJSONError = runtimeSymbol("AWSJSONError", SwiftDeclaration.STRUCT, emptyList(), listOf("SmithyReadWrite"))
+    }
+
+    object RestXML {
+        val RestXMLError = runtimeSymbol("RestXMLError", SwiftDeclaration.STRUCT, emptyList(), listOf("SmithyReadWrite"))
+    }
+
+    object AWSQuery {
+        val AWSQueryError = runtimeSymbol("AWSQueryError", SwiftDeclaration.STRUCT, emptyList(), listOf("SmithyReadWrite"))
+        val QueryCompatibleUtils = runtimeSymbol("QueryCompatibleUtils", SwiftDeclaration.ENUM, emptyList(), listOf("SmithyReadWrite"))
+    }
+
+    object EC2Query {
+        val EC2QueryError = runtimeSymbol("EC2QueryError", SwiftDeclaration.STRUCT, emptyList(), listOf("SmithyReadWrite"))
     }
 
     object RpcV2Cbor {
         val RpcV2CborError = runtimeSymbol("RpcV2CborError", SwiftDeclaration.STRUCT, emptyList(), listOf("SmithyReadWrite"))
-        val RpcV2CborQueryCompatibleUtils =
-            runtimeSymbol("RpcV2CborQueryCompatibleUtils", SwiftDeclaration.ENUM, emptyList(), listOf("SmithyReadWrite"))
         val CborValidateResponseHeaderMiddleware = runtimeSymbol("CborValidateResponseHeaderMiddleware", SwiftDeclaration.STRUCT)
     }
 }
